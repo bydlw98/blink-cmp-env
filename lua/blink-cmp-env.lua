@@ -8,8 +8,10 @@ local completion_items = {}
 
 --- @class blink-cmp-env.Options
 --- @field item_kind uinteger
+--- @field show_documentation_window boolean
 local opts = {
-    item_kind = require("blink.cmp.types").CompletionItemKind.Variable
+	item_kind = require("blink.cmp.types").CompletionItemKind.Variable,
+	show_documentation_window = true,
 }
 
 --- @param value string[]
@@ -29,11 +31,17 @@ local function setup_completion_items()
 		-- e.g. PATH -> $PATH
 		key = "$" .. key
 
+		-- Show documentation if `show_documentation_window` is true
+		local documentation = nil
+		if opts.show_documentation_window then
+			documentation = setup_documentation_for_item(value)
+		end
+
 		table.insert(completion_items, {
 			label = key,
 			insertText = key,
 			kind = opts.item_kind,
-			documentation = setup_documentation_for_item(value),
+			documentation = documentation,
 		})
 	end
 end
