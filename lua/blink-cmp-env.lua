@@ -6,6 +6,12 @@ local cached_results = false
 --- @type blink.cmp.CompletionItem[]
 local completion_items = {}
 
+--- @class blink-cmp-env.Options
+--- @field item_kind uinteger
+local opts = {
+    item_kind = require("blink.cmp.types").CompletionItemKind.Variable
+}
+
 --- @param value string[]
 local function setup_documentation_for_item(value)
 	return {
@@ -26,7 +32,7 @@ local function setup_completion_items()
 		table.insert(completion_items, {
 			label = key,
 			insertText = key,
-			kind = require("blink.cmp.types").CompletionItemKind.Variable,
+			kind = opts.item_kind,
 			documentation = setup_documentation_for_item(value),
 		})
 	end
@@ -35,7 +41,10 @@ end
 --- @type blink.cmp.Source
 local env = {}
 
-function env.new()
+--- @param param_opts blink-cmp-env.Options
+function env.new(param_opts)
+	opts = vim.tbl_deep_extend("keep", param_opts, opts)
+
 	return setmetatable({}, { __index = env })
 end
 
