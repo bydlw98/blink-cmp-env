@@ -7,9 +7,11 @@ local cached_results = false
 local completion_items = {}
 
 --- @class blink-cmp-env.Options
+--- @field eval_on_confirm boolean
 --- @field item_kind uinteger
 --- @field show_documentation_window boolean
 local opts = {
+	eval_on_confirm = false,
 	item_kind = require("blink.cmp.types").CompletionItemKind.Variable,
 	show_documentation_window = true,
 }
@@ -39,7 +41,8 @@ local function setup_completion_items()
 
 		table.insert(completion_items, {
 			label = key,
-			insertText = key,
+			-- Evaluate the environment variable if `eval_on_confirm` is true
+			insertText = opts.eval_on_confirm and value or key,
 			kind = opts.item_kind,
 			documentation = documentation,
 		})
