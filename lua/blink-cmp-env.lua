@@ -13,6 +13,7 @@ local completion_items = {}
 local opts = {
 	eval_on_confirm = false,
 	item_kind = require("blink.cmp.types").CompletionItemKind.Variable,
+	show_braces = false,
 	show_documentation_window = true,
 }
 
@@ -29,9 +30,9 @@ local function setup_completion_items()
 	local env_vars = vim.fn.environ()
 
 	for key, value in pairs(env_vars) do
-		-- Prepend $ to key
-		-- e.g. PATH -> $PATH
-		key = "$" .. key
+		-- Prepend $ to key, also surround in braces if `show_braces` is true
+		-- e.g. PATH -> $PATH -> ${PATH}
+		key = "$" .. (opts.show_braces and "{" .. key .. "}" or key)
 
 		-- Show documentation if `show_documentation_window` is true
 		local documentation = nil
