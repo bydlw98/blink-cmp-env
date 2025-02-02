@@ -61,6 +61,17 @@ function env:setup_completion_items()
 			kind = self.item_kind,
 			documentation = documentation,
 		})
+
+        table.insert(self.completion_items, {
+            label = key,
+            insertTextFormat = vim.lsp.protocol.InsertTextFormat.Snippet,
+            insertText = value,
+            kind = require("blink.cmp.types").CompletionItemKind.Snippet,
+            documentation = {
+                kind = "markdown",
+                value = value
+            }
+        })
 	end
 end
 
