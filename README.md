@@ -23,7 +23,6 @@ Inspired by [cmp-env](https://github.com/bydlw98/cmp-env).
                     module = "blink-cmp-env",
                     --- @type blink-cmp-env.Options
                     opts = {
-                        eval_on_confirm = false,
                         item_kind = require("blink.cmp.types").CompletionItemKind.Variable,
                         show_braces = false,
                         show_documentation_window = true,
@@ -36,14 +35,6 @@ Inspired by [cmp-env](https://github.com/bydlw98/cmp-env).
 ```
 
 ## Options
-
-### eval_on_confirm (type: boolean)
-
-_Default:_ `false`
-
-Specify whether a confirmed entry should insert the evaluated environment
-variable rather than the environment variable itself. For example, if you
-confirm `$SHELL`, it might insert `/bin/bash`.
 
 ### item_kind (type: number)
 
@@ -65,4 +56,4 @@ Specify whether to show documentation window which contains value of environment
 
 ## Special Thanks
 
-- [@amarz45](https://github.com/amarz45) cmp-env general improvements and implementation for eval_on_confirm/show_braces options
+- [@amarz45](https://github.com/amarz45) cmp-env general improvements and implementation for show_braces options

@@ -1,7 +1,6 @@
 --- @module 'blink.cmp'
 
 --- @class blink-cmp-env.Options
---- @field eval_on_confirm boolean
 --- @field item_kind uinteger
 --- @field show_braces boolean
 --- @field show_documentation_window boolean
@@ -23,7 +22,6 @@ local env = {}
 function env.new(opts)
 	--- @type blink-cmp-env.Options
 	local default_opts = {
-		eval_on_confirm = false,
 		item_kind = require("blink.cmp.types").CompletionItemKind.Variable,
 		show_braces = false,
 		show_documentation_window = true,
@@ -56,8 +54,7 @@ function env:setup_completion_items()
 
 		table.insert(self.completion_items, {
 			label = key,
-			-- Evaluate the environment variable if `eval_on_confirm` is true
-			insertText = self.eval_on_confirm and value or key,
+			insertText = key,
 			kind = self.item_kind,
 			documentation = documentation,
 		})
