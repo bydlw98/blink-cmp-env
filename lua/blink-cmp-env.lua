@@ -6,7 +6,7 @@
 --- @field show_braces boolean
 --- @field show_documentation_window boolean
 
---- @param value string[]
+--- @param value string
 local function setup_documentation_for_item(value)
 	return {
 		kind = "markdown",
@@ -62,16 +62,13 @@ function env:setup_completion_items()
 			documentation = documentation,
 		})
 
-        table.insert(self.completion_items, {
-            label = key,
-            insertTextFormat = vim.lsp.protocol.InsertTextFormat.Snippet,
-            insertText = value,
-            kind = require("blink.cmp.types").CompletionItemKind.Snippet,
-            documentation = {
-                kind = "markdown",
-                value = value
-            }
-        })
+		table.insert(self.completion_items, {
+			label = key,
+			insertTextFormat = vim.lsp.protocol.InsertTextFormat.Snippet,
+			insertText = value,
+			kind = require("blink.cmp.types").CompletionItemKind.Snippet,
+			documentation = documentation,
+		})
 	end
 end
 
