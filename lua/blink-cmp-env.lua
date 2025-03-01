@@ -55,6 +55,10 @@ function env:setup_completion_items()
 		table.insert(self.completion_items, {
 			label = key,
 			insertText = key,
+			insertTextFormat = vim.lsp.protocol.InsertTextFormat.PlainText,
+			textEdit = {
+				newText = key,
+			},
 			kind = self.item_kind,
 			documentation = documentation,
 		})
@@ -69,7 +73,7 @@ function env:setup_completion_items()
 	end
 end
 
-function env:get_completions(_, callback)
+function env:get_completions(context, callback)
 	-- When first ran, cached_results will be false
 	-- thus setup completion_items so that it does not have to be setup again
 	-- After the first time, there is no need to setup completion_items again
@@ -78,6 +82,23 @@ function env:get_completions(_, callback)
 	if self.cached_results == false then
 		self:setup_completion_items()
 		self.cached_results = true
+	end
+
+    local start_character_offset = 1
+    if string.find(context.line, "$", 1, true) then
+        start_character_offset = 2
+    end
+
+	for _, item in ipairs(self.completion_items) do
+		if item.kind == self.item_kind then
+			item.textEdit.range = {
+				start = {
+					line = context.cursor[1] - 1,
+					character = context.bounds.start_col - start_character_offset,
+				},
+				["end"] = { line = context.cursor[1] - 1, character = context.cursor[2] },
+			}
+		end
 	end
 
 	callback({
