@@ -84,10 +84,10 @@ function env:get_completions(context, callback)
 		self.cached_results = true
 	end
 
-    local start_character_offset = 1
-    if string.find(context.line, "$", 1, true) then
-        start_character_offset = 2
-    end
+	local start_character_offset = 1
+	if string.find(context.line, "$", 1, true) then
+		start_character_offset = 2
+	end
 
 	for _, item in ipairs(self.completion_items) do
 		if item.kind == self.item_kind then
