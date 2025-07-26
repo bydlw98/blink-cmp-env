@@ -1,5 +1,7 @@
 --- @module 'blink.cmp'
 
+local async = require("blink.cmp.lib.async")
+
 --- @class blink-cmp-env.Options
 --- @field item_kind uinteger
 --- @field show_braces boolean
@@ -35,6 +37,30 @@ function env.new(opts)
 	)
 
 	return setmetatable(opts, { __index = env })
+end
+
+function env:get_trigger_characters()
+	return { "$" }
+end
+
+--- @param context blink.cmp.Context
+function env:get_completions(context, callback)
+	local task = async.task.empty():map(function()
+		local trigger_characters = self:get_trigger_characters()
+		local cursor_first_character =
+			context.line:sub(context.bounds.start_col - 1, context.bounds.start_col - 1)
+
+		if vim.list_contains(trigger_characters, cursor_first_character) then
+			return self:internal_get_completions(context, callback)
+		else
+			callback()
+			return function() end
+		end
+	end)
+
+	return function()
+		task:cancel()
+	end
 end
 
 function env:setup_completion_items()
@@ -73,7 +99,8 @@ function env:setup_completion_items()
 	end
 end
 
-function env:get_completions(context, callback)
+--- @param context blink.cmp.Context
+function env:internal_get_completions(context, callback)
 	-- When first ran, cached_results will be false
 	-- thus setup completion_items so that it does not have to be setup again
 	-- After the first time, there is no need to setup completion_items again
