@@ -4,6 +4,10 @@
 
 Inspired by [cmp-env](https://github.com/bydlw98/cmp-env).
 
+## Features
+
+- Trigger on dollar sign `$`.
+
 ## Installation
 
 ### `lazy.nvim`
@@ -57,3 +61,7 @@ Specify whether to show documentation window which contains value of environment
 ## Special Thanks
 
 - [@amarz45](https://github.com/amarz45) cmp-env general improvements and implementation for show_braces options
+
+## Credit
+
+- Based on [moyiz/blink-emoji.nvim](https://github.com/moyiz/blink-emoji.nvim) and [MahanRahmati/blink-nerdfont.nvim](https://github.com/MahanRahmati/blink-nerdfont.nvim)
