@@ -15,6 +15,34 @@ local function setup_documentation_for_item(value)
 	}
 end
 
+--- Include the trigger character when accepting a completion.
+--- @param items blink.cmp.CompletionItem[]
+--- @param context blink.cmp.Context
+local function transform(items, context)
+	local snippet_kind = require("blink.cmp.types").CompletionItemKind.Snippet
+
+	return vim.tbl_map(function(entry)
+		if entry.kind == snippet_kind then
+			return entry
+		else
+			return vim.tbl_deep_extend("force", entry, {
+				textEdit = {
+					range = {
+						start = {
+							line = context.cursor[1] - 1,
+							character = context.bounds.start_col - 2,
+						},
+						["end"] = {
+							line = context.cursor[1] - 1,
+							character = context.cursor[2],
+						},
+					},
+				},
+			})
+		end
+	end, items)
+end
+
 --- @class EnvSource : blink.cmp.Source, blink-cmp-env.Options
 --- @field cached_results boolean
 --- @field completion_items blink.cmp.CompletionItem[]
@@ -51,11 +79,20 @@ function env:get_completions(context, callback)
 			context.line:sub(context.bounds.start_col - 1, context.bounds.start_col - 1)
 
 		if vim.list_contains(trigger_characters, cursor_first_character) then
-			return self:internal_get_completions(context, callback)
+			if self.cached_results == false then
+				self:setup_completion_items()
+				self.cached_results = true
+			end
+
+			callback({
+				is_incomplete_forward = false,
+				is_incomplete_backward = false,
+				items = transform(self.completion_items, context),
+			})
 		else
 			callback()
-			return function() end
 		end
+		return function() end
 	end)
 
 	return function()
@@ -97,44 +134,6 @@ function env:setup_completion_items()
 			documentation = documentation,
 		})
 	end
-end
-
---- @param context blink.cmp.Context
-function env:internal_get_completions(context, callback)
-	-- When first ran, cached_results will be false
-	-- thus setup completion_items so that it does not have to be setup again
-	-- After the first time, there is no need to setup completion_items again
-	-- as the environments variables would unlikely be changed and the cached
-	-- completion_items is reused
-	if self.cached_results == false then
-		self:setup_completion_items()
-		self.cached_results = true
-	end
-
-	local start_character_offset = 1
-	if string.find(context.line, "$", 1, true) then
-		start_character_offset = 2
-	end
-
-	for _, item in ipairs(self.completion_items) do
-		if item.kind == self.item_kind then
-			item.textEdit.range = {
-				start = {
-					line = context.cursor[1] - 1,
-					character = context.bounds.start_col - start_character_offset,
-				},
-				["end"] = { line = context.cursor[1] - 1, character = context.cursor[2] },
-			}
-		end
-	end
-
-	callback({
-		is_incomplete_forward = false,
-		is_incomplete_backward = false,
-		items = self.completion_items,
-	})
-
-	return function() end
 end
 
 return env
