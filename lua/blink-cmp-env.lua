@@ -3,53 +3,62 @@
 local async = require("blink.cmp.lib.async")
 
 --- @class blink-cmp-env.Options
---- @field item_kind uinteger
---- @field show_braces boolean
---- @field show_documentation_window boolean
+--- @field item_kind? uinteger
+--- @field show_braces? boolean
+--- @field show_documentation_window? boolean
 
+--- @param key string
 --- @param value string
-local function setup_documentation_for_item(value)
+--- @return { kind: lsp.MarkupKind, value: string }
+local function setup_item_docs(key, value)
 	return {
 		kind = "markdown",
-		value = "```sh\n" .. value .. "\n```",
+		value = string.format("# `%s`\n\n```sh\n%s\n```", key, value),
 	}
 end
 
 --- Include the trigger character when accepting a completion.
 --- @param items blink.cmp.CompletionItem[]
---- @param context blink.cmp.Context
-local function transform(items, context)
+--- @param ctx blink.cmp.Context
+local function transform(items, ctx)
 	local snippet_kind = require("blink.cmp.types").CompletionItemKind.Snippet
 
+	--- @param entry blink.cmp.CompletionItem
 	return vim.tbl_map(function(entry)
-		if entry.kind == snippet_kind then
+		if entry.kind and entry.kind == snippet_kind then
 			return entry
-		else
-			return vim.tbl_deep_extend("force", entry, {
-				textEdit = {
-					range = {
-						start = {
-							line = context.cursor[1] - 1,
-							character = context.bounds.start_col - 2,
-						},
-						["end"] = {
-							line = context.cursor[1] - 1,
-							character = context.cursor[2],
-						},
+		end
+
+		return vim.tbl_deep_extend("force", entry, {
+			textEdit = {
+				range = {
+					start = {
+						line = ctx.cursor[1] - 1,
+						character = ctx.bounds.start_col - 2,
+					},
+					["end"] = {
+						line = ctx.cursor[1] - 1,
+						character = ctx.cursor[2],
 					},
 				},
-			})
-		end
+			},
+		})
 	end, items)
 end
 
---- @class EnvSource : blink.cmp.Source, blink-cmp-env.Options
+--- @class EnvSource : blink.cmp.Source
+--- @field opts blink-cmp-env.Options
 --- @field cached_results boolean
 --- @field completion_items blink.cmp.CompletionItem[]
-local env = {}
+local M = {}
 
---- @param opts blink-cmp-env.Options
-function env.new(opts)
+--- @param opts? blink-cmp-env.Options
+--- @return table|EnvSource
+function M.new(opts)
+	vim.validate("blink-cmp-env.Options", opts, "table", true, "blink-cmp-env.Options")
+
+	opts = opts or {}
+
 	--- @type blink-cmp-env.Options
 	local default_opts = {
 		item_kind = require("blink.cmp.types").CompletionItemKind.Variable,
@@ -57,29 +66,33 @@ function env.new(opts)
 		show_documentation_window = true,
 	}
 
-	opts = vim.tbl_deep_extend(
-		"keep",
-		opts,
-		default_opts,
-		{ cached_results = false, completion_items = {} }
-	)
+	local self = setmetatable({}, { __index = M })
 
-	return setmetatable(opts, { __index = env })
+	self.opts = vim.tbl_deep_extend("keep", opts, default_opts)
+	self.cached_results = false
+	self.completion_items = {}
+
+	return self
 end
 
-function env:get_trigger_characters()
+--- @return string[]
+function M:get_trigger_characters()
 	return { "$" }
 end
 
---- @param context blink.cmp.Context
-function env:get_completions(context, callback)
+--- @param ctx blink.cmp.Context
+--- @param callback fun(...: any)
+--- @return fun()
+function M:get_completions(ctx, callback)
 	local task = async.task.empty():map(function()
-		local trigger_characters = self:get_trigger_characters()
-		local cursor_first_character =
-			context.line:sub(context.bounds.start_col - 1, context.bounds.start_col - 1)
+		local trigger_chars = self:get_trigger_characters()
+		local start_col = ctx.bounds.start_col
 
-		if vim.list_contains(trigger_characters, cursor_first_character) then
-			if self.cached_results == false then
+		--- @cast start_col integer
+		local cursor_first_char = ctx.line:sub(start_col - 1, start_col - 1)
+
+		if vim.list_contains(trigger_chars, cursor_first_char) then
+			if not self.cached_results then
 				self:setup_completion_items()
 				self.cached_results = true
 			end
@@ -87,11 +100,12 @@ function env:get_completions(context, callback)
 			callback({
 				is_incomplete_forward = false,
 				is_incomplete_backward = false,
-				items = transform(self.completion_items, context),
+				items = transform(self.completion_items, ctx),
 			})
 		else
 			callback()
 		end
+
 		return function() end
 	end)
 
@@ -100,20 +114,19 @@ function env:get_completions(context, callback)
 	end
 end
 
-function env:setup_completion_items()
-	-- Get a dictionary with environment variables and their respective values
+--- Get a dictionary with environment variables and their respective values
+function M:setup_completion_items()
+	--- @type table<string, string>
 	local env_vars = vim.fn.environ()
 
 	for key, value in pairs(env_vars) do
-		-- Prepend $ to key, also surround in braces if `show_braces` is true
-		-- e.g. PATH -> $PATH -> ${PATH}
-		key = "$" .. (self.show_braces and "{" .. key .. "}" or key)
+		--- Prepend `$` to key, also surround in braces if `show_braces` is `true`
+		--- e.g. `PATH` -> `$PATH` -> `${PATH}`
+		key = "$" .. (self.opts.show_braces and "{" .. key .. "}" or key)
 
-		-- Show documentation if `show_documentation_window` is true
-		local documentation = nil
-		if self.show_documentation_window then
-			documentation = setup_documentation_for_item(value)
-		end
+		--- Show documentation if `show_documentation_window` is true
+		local documentation = self.opts.show_documentation_window and setup_item_docs(key, value)
+			or nil
 
 		table.insert(self.completion_items, {
 			label = key,
@@ -122,7 +135,7 @@ function env:setup_completion_items()
 			textEdit = {
 				newText = key,
 			},
-			kind = self.item_kind,
+			kind = self.opts.item_kind,
 			documentation = documentation,
 		})
 
@@ -136,4 +149,6 @@ function env:setup_completion_items()
 	end
 end
 
-return env
+return M
+
+--- vim:ts=4:sts=4:sw=0:noet:
