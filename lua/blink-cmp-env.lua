@@ -141,7 +141,7 @@ function M:setup_completion_items()
 
 		table.insert(self.completion_items, {
 			label = key,
-			insertTextFormat = vim.lsp.protocol.InsertTextFormat.Snippet,
+			insertTextFormat = vim.lsp.protocol.InsertTextFormat.PlainText,
 			insertText = value,
 			kind = require("blink.cmp.types").CompletionItemKind.Snippet,
 			documentation = documentation,
