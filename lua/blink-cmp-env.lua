@@ -53,9 +53,13 @@ end
 local M = {}
 
 --- @param opts? blink-cmp-env.Options
---- @return table|EnvSource
+--- @return EnvSource
 function M.new(opts)
-	vim.validate("blink-cmp-env.Options", opts, "table", true, "blink-cmp-env.Options")
+	if vim.fn.has("nvim-0.11") == 1 then
+		vim.validate("opts", opts, "table", true, "blink-cmp-env.Options")
+	else
+		vim.validate({ opts = { opts, { "table", "nil" } } })
+	end
 
 	opts = opts or {}
 
@@ -66,6 +70,7 @@ function M.new(opts)
 		show_documentation_window = true,
 	}
 
+	--- @type EnvSource
 	local self = setmetatable({}, { __index = M })
 
 	self.opts = vim.tbl_deep_extend("keep", opts, default_opts)
