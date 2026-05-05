@@ -16,6 +16,7 @@ Inspired by [cmp-env](https://github.com/bydlw98/cmp-env).
 {
     "saghen/blink.cmp",
     dependencies = {
+        "saghen/blink.lib", -- required only for blink.cmp v2 users
         "bydlw98/blink-cmp-env",
     },
     opts = {
