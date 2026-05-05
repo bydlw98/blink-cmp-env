@@ -1,6 +1,13 @@
 --- @module 'blink.cmp'
 
-local async = require("blink.cmp.lib.async")
+-- TODO: remove "blink.cmp.lib.async" module when blink.cmp v2 is stable.
+local task_ok, task = pcall(function()
+	return require("blink.cmp.lib.async").task
+end)
+
+if not task_ok then
+	task = require("blink.lib.task")
+end
 
 --- @class blink-cmp-env.Options
 --- @field item_kind? uinteger
@@ -89,7 +96,7 @@ end
 --- @param callback fun(...: any)
 --- @return fun()
 function M:get_completions(ctx, callback)
-	local task = async.task.empty():map(function()
+	local chained_task = task.new(function()
 		local trigger_chars = self:get_trigger_characters()
 		local start_col = ctx.bounds.start_col
 
@@ -115,7 +122,7 @@ function M:get_completions(ctx, callback)
 	end)
 
 	return function()
-		task:cancel()
+		chained_task:cancel()
 	end
 end
 
